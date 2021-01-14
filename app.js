@@ -8,6 +8,7 @@ const session = require("express-session");
 const passport = require("passport");
 const passportLocalMongoose = require("passport-local-mongoose");
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const FacebookStrategy = require("passport-facebook");
 const findOrCreate = require('mongoose-findorcreate'); // dont forget to require after installing this package
 
 
@@ -31,7 +32,8 @@ mongoose.connect("mongodb://localhost:27017/userDB", {useNewUrlParser: true, use
 const userSchema = new mongoose.Schema({
 	email: String,
 	password: String,
-	googleId: String  // add googleId field to add a googleId field on the mongoDB database
+	googleId: String,  // add googleId field to add a googleId field on the mongoDB database
+	facebookId: String
 });
 
 userSchema.plugin(passportLocalMongoose); // this code should be placed after creating the schema and before the model
@@ -66,6 +68,18 @@ passport.use(new GoogleStrategy({
   }
 ));
 
+passport.use(new FacebookStrategy({
+    clientID: process.env.APP_ID,
+    clientSecret: process.env.APP_SECRET,
+    callbackURL: "http://localhost:3000/auth/facebook/secrets"
+  },
+  function(accessToken, refreshToken, profile, cb) {
+    User.findOrCreate({ facebookId: profile.id }, function (err, user) {
+      return cb(err, user);
+    });
+  }
+));
+
 
 app.get("/", function (req, res) {
     res.render("home");
@@ -92,6 +106,16 @@ app.get('/auth/google',
 
 app.get('/auth/google/secrets', 
   passport.authenticate('google', { failureRedirect: '/login' }),
+  function(req, res) {
+    // Successful authentication, redirect to "/secrets".
+    res.redirect('/secrets');
+  });
+
+app.get('/auth/facebook',
+  passport.authenticate('facebook'));
+
+app.get('/auth/facebook/secrets',
+  passport.authenticate('facebook', { failureRedirect: '/login' }),
   function(req, res) {
     // Successful authentication, redirect to "/secrets".
     res.redirect('/secrets');
