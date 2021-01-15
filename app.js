@@ -8,7 +8,7 @@ const session = require("express-session");
 const passport = require("passport");
 const passportLocalMongoose = require("passport-local-mongoose");
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const FacebookStrategy = require("passport-facebook");
+const FacebookStrategy = require("passport-facebook").Strategy;
 const findOrCreate = require('mongoose-findorcreate'); // dont forget to require after installing this package
 
 
@@ -27,9 +27,10 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-mongoose.connect("mongodb://localhost:27017/userDB", {useNewUrlParser: true, useUnifiedTopology: true, useCreateIndex: true });
+mongoose.connect(process.env.MONGODB_CONNECTION, {useNewUrlParser: true, useUnifiedTopology: true, useCreateIndex: true });
 
 const userSchema = new mongoose.Schema({
+  username: String, //add username field to prevent error E11000 duplicate key error collection
 	email: String,
 	password: String,
 	googleId: String,  // add googleId field to add a googleId field on the mongoDB database
@@ -187,6 +188,12 @@ app.get("/logout", function(req, res){
 	res.redirect("/");
 });
 
-app.listen(3000, function () {
-    console.log("Server started on port 3000");
-});//jshint esversion:6
+let port = process.env.PORT;
+if(port == null || port == ""){
+  port = 3000;
+}
+
+app.listen(port, function() { 
+  console.log("Server has started Successfully! on port " + port); 
+});
+
